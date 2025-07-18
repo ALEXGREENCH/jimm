@@ -1,0 +1,39 @@
+plugins {
+    id 'java'
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation 'org.microemu:microemulator:2.0.4'
+    implementation 'org.microemu:microemu-jsr-75:2.0.4'
+    implementation 'org.microemu:microemu-jsr-120:2.0.4'
+    implementation 'org.microemu:microemu-jsr-135:2.0.4'
+    implementation 'org.microemu:microemu-siemensapi:2.0.4'
+    implementation 'org.microemu:microemu-nokiaui:2.0.4'
+}
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_1_8
+    targetCompatibility = JavaVersion.VERSION_1_8
+}
+
+jar {
+    manifest {
+        attributes 'Main-Class': 'jimm.Jimm'
+    }
+}
+
+sourceSets {
+    main {
+        java {
+            srcDirs = ['src', 'stubs']
+            exclude { it.file.path.contains('src/jimm/PhoneBook.java') }
+        }
+        resources {
+            srcDirs = ['res']
+        }
+    }
+}
