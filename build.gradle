@@ -1,0 +1,146 @@
+plugins {
+    id 'java'
+}
+
+repositories {
+    mavenCentral()
+}
+
+configurations {
+    langTool
+}
+
+dependencies {
+    implementation 'org.microemu:microemulator:2.0.4'
+    implementation 'org.microemu:microemu-jsr-75:2.0.4'
+    implementation 'org.microemu:microemu-jsr-120:2.0.4'
+    implementation 'org.microemu:microemu-jsr-135:2.0.4'
+    implementation 'org.microemu:microemu-siemensapi:2.0.4'
+    implementation 'org.microemu:microemu-nokiaui:2.0.4'
+
+    langTool 'org.apache.ant:ant:1.10.14'
+}
+
+ext {
+    target = project.findProperty('target') ?: 'MIDP2'
+    modules = (project.findProperty('modules') ?: \
+            'TRAFFIC,HISTORY,FILES,SMILES_ANI,PROXY,ANTISPAM,AVATARS,DEBUGLOG')
+            .split(',').collect { it.trim() }
+    languages = project.findProperty('lang') ?: 'EN,BE,BG,BR,CZ,DE,ES,FR,HE,IT,LT,PL,RU,SE,SK,SR,UA'
+    versionJimm = project.findProperty('versionJimm') ?: '0.0'
+    versionJava = project.findProperty('versionJava') ?: '0.0'
+    midletName = project.findProperty('midletName') ?: 'Jimm'
+}
+
+def preprocessedDir = file("$buildDir/preprocessed")
+def processedResDir = file("$buildDir/res")
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_1_8
+    targetCompatibility = JavaVersion.VERSION_1_8
+}
+
+jar {
+    dependsOn 'preprocessManifest', 'copyResources'
+    manifest {
+        from "$buildDir/MANIFEST.MF"
+        attributes 'Main-Class': 'jimm.Jimm'
+    }
+}
+
+sourceSets {
+    preproc {
+        java.srcDir 'util/sijapp/src'
+    }
+    main {
+        java.srcDirs = [preprocessedDir, 'stubs']
+        resources.srcDirs = [processedResDir]
+    }
+}
+
+task compilePreproc(type: JavaCompile) {
+    source = sourceSets.preproc.java
+    exclude 'sijapp/SijappTask.java'
+    classpath = sourceSets.preproc.compileClasspath
+    destinationDirectory = file("$buildDir/classes/preproc")
+    sourceCompatibility = '1.8'
+    targetCompatibility = '1.8'
+}
+
+task compileLangTool(type: JavaCompile) {
+    source = fileTree('util/langs/src') { include '**/*.java' }
+    destinationDirectory = file("$buildDir/classes/langtool")
+    classpath = configurations.langTool
+    sourceCompatibility = '1.8'
+    targetCompatibility = '1.8'
+}
+
+task generateLangs(type: JavaExec) {
+    dependsOn compileLangTool, 'preprocess'
+    inputs.dir new File(preprocessedDir, 'lng')
+    outputs.dir processedResDir
+    mainClass = 'langs.LangsMain'
+    classpath = files(compileLangTool.destinationDirectory) + configurations.langTool
+    args languages, new File(preprocessedDir, 'lng'), processedResDir, preprocessedDir, 'EN'
+}
+
+task preprocess(type: JavaExec) {
+    dependsOn compilePreproc
+    inputs.dir 'src'
+    outputs.dir preprocessedDir
+    mainClass = 'sijapp.PreprocessMain'
+    classpath = files(compilePreproc.destinationDirectory)
+
+    doFirst {
+        preprocessedDir.mkdirs()
+        def defines = ["target=${target}"]
+        def knownModules = ['TRAFFIC','HISTORY','FILES','SMILES_STD','SMILES_ANI','PROXY','ANTISPAM','AVATARS','PIM','DEBUGLOG']
+        knownModules.each { m ->
+            defines << "modules_${m}=" + (modules.contains(m) ? 'true' : 'false')
+        }
+        args 'src', preprocessedDir
+        args defines
+    }
+}
+
+def graphicsDir = ['DEFAULT','SIEMENS2','MOTOROLA','RIM'].contains(target) ? 'GRAPHICS_8BIT' : 'GRAPHICS_32BIT'
+def midpProfile = ['MIDP2','SIEMENS2','MOTOROLA'].contains(target) ? 'MIDP-2.0' : 'MIDP-1.0'
+
+task copyResources(type: Copy) {
+    dependsOn generateLangs
+    from('res') { exclude 'MANIFEST.MF' }
+    from("res/${graphicsDir}/COMMON") { into '' }
+    from("res/${target}") { into '' ; exclude 'lib/**' }
+    if (modules.contains('FILES')) {
+        from("res/${graphicsDir}/MODULES/FILES") { into '' }
+    }
+    if (modules.contains('SMILES_STD')) {
+        from("res/${graphicsDir}/MODULES/SMILES_STD") { into 'SMILES_STD' }
+    } else if (modules.contains('SMILES_ANI')) {
+        from("res/${graphicsDir}/MODULES/SMILES_ANI") { into 'SMILES_ANI' }
+    }
+    into processedResDir
+}
+
+task preprocessManifest {
+    inputs.file 'res/MANIFEST.MF'
+    outputs.file "$buildDir/MANIFEST.MF"
+    doLast {
+        processedResDir.mkdirs()
+        def text = file('res/MANIFEST.MF').getText('UTF-8')
+        text = text.replace('###MIDLET-NAME###', midletName)
+                   .replace('###VERSION-JAVA###', versionJava)
+                   .replace('###VERSION###', versionJimm)
+                   .replace('###DATE###', new Date().format('yyyy/MM/dd'))
+                   .replace('###MIDP-PROFILE###', midpProfile)
+        file("$buildDir/MANIFEST.MF").write(text, 'UTF-8')
+    }
+}
+
+tasks.named('compileJava') {
+    dependsOn preprocess, generateLangs, copyResources
+}
+
+tasks.named('processResources') {
+    dependsOn copyResources
+}
