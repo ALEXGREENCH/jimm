@@ -15,6 +15,15 @@ dependencies {
     implementation 'org.microemu:microemu-nokiaui:2.0.4'
 }
 
+ext {
+    target = project.findProperty('target') ?: 'MIDP2'
+    modules = (project.findProperty('modules') ?: \
+            'TRAFFIC,HISTORY,FILES,SMILES_ANI,PROXY,ANTISPAM,AVATARS,DEBUGLOG')
+            .split(',').collect { it.trim() }
+}
+
+def preprocessedDir = file("$buildDir/preprocessed")
+
 java {
     sourceCompatibility = JavaVersion.VERSION_1_8
     targetCompatibility = JavaVersion.VERSION_1_8
@@ -27,13 +36,43 @@ jar {
 }
 
 sourceSets {
-    main {
-        java {
-            srcDirs = ['src', 'stubs']
-            exclude { it.file.path.contains('src/jimm/PhoneBook.java') }
-        }
-        resources {
-            srcDirs = ['res']
-        }
+    preproc {
+        java.srcDir 'util/sijapp/src'
     }
+    main {
+        java.srcDirs = [preprocessedDir, 'stubs']
+        resources.srcDirs = ['res']
+    }
+}
+
+task compilePreproc(type: JavaCompile) {
+    source = sourceSets.preproc.java
+    exclude 'sijapp/SijappTask.java'
+    classpath = sourceSets.preproc.compileClasspath
+    destinationDirectory = file("$buildDir/classes/preproc")
+    sourceCompatibility = '1.8'
+    targetCompatibility = '1.8'
+}
+
+task preprocess(type: JavaExec) {
+    dependsOn compilePreproc
+    inputs.dir 'src'
+    outputs.dir preprocessedDir
+    mainClass = 'sijapp.PreprocessMain'
+    classpath = files(compilePreproc.destinationDirectory)
+
+    doFirst {
+        preprocessedDir.mkdirs()
+        def defines = ["target=${target}"]
+        def knownModules = ['TRAFFIC','HISTORY','FILES','SMILES_STD','SMILES_ANI','PROXY','ANTISPAM','AVATARS','PIM','DEBUGLOG']
+        knownModules.each { m ->
+            defines << "modules_${m}=" + (modules.contains(m) ? 'true' : 'false')
+        }
+        args 'src', preprocessedDir
+        args defines
+    }
+}
+
+tasks.named('compileJava') {
+    dependsOn preprocess
 }
