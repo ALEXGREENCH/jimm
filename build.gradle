@@ -108,18 +108,32 @@ def midpProfile = ['MIDP2','SIEMENS2','MOTOROLA'].contains(target) ? 'MIDP-2.0' 
 
 task copyResources(type: Copy) {
     dependsOn generateLangs
-    from('res') { exclude 'MANIFEST.MF' }
-    from("res/${graphicsDir}/COMMON") { into '' }
-    from("res/${target}") { into '' ; exclude 'lib/**' }
+    into processedResDir
+
+    // Flatten common graphics files
+    from("res/${graphicsDir}/COMMON") {
+        includeEmptyDirs = false
+        include '**/*'
+        eachFile { details -> details.path = details.name }
+    }
+
+    // Flatten target specific resources and exclude libraries
+    from("res/${target}") {
+        exclude 'lib/**'
+        includeEmptyDirs = false
+        include '**/*'
+        eachFile { details -> details.path = details.name }
+    }
+
+    // Additional modules keep their directory structure
     if (modules.contains('FILES')) {
-        from("res/${graphicsDir}/MODULES/FILES") { into '' }
+        from("res/${graphicsDir}/MODULES/FILES")
     }
     if (modules.contains('SMILES_STD')) {
-        from("res/${graphicsDir}/MODULES/SMILES_STD") { into 'SMILES_STD' }
+        from("res/${graphicsDir}/MODULES/SMILES_STD")
     } else if (modules.contains('SMILES_ANI')) {
-        from("res/${graphicsDir}/MODULES/SMILES_ANI") { into 'SMILES_ANI' }
+        from("res/${graphicsDir}/MODULES/SMILES_ANI")
     }
-    into processedResDir
 }
 
 task preprocessManifest {
