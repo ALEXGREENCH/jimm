@@ -6,10 +6,6 @@ repositories {
     mavenCentral()
 }
 
-configurations {
-    langTool
-}
-
 dependencies {
     implementation 'org.microemu:microemulator:2.0.4'
     implementation 'org.microemu:microemu-jsr-75:2.0.4'
@@ -17,8 +13,6 @@ dependencies {
     implementation 'org.microemu:microemu-jsr-135:2.0.4'
     implementation 'org.microemu:microemu-siemensapi:2.0.4'
     implementation 'org.microemu:microemu-nokiaui:2.0.4'
-
-    langTool 'org.apache.ant:ant:1.10.14'
 }
 
 ext {
@@ -70,7 +64,7 @@ task compilePreproc(type: JavaCompile) {
 task compileLangTool(type: JavaCompile) {
     source = fileTree('util/langs/src') { include '**/*.java' }
     destinationDirectory = file("$buildDir/classes/langtool")
-    classpath = configurations.langTool
+    classpath = files()
     sourceCompatibility = '1.8'
     targetCompatibility = '1.8'
 }
@@ -80,7 +74,7 @@ task generateLangs(type: JavaExec) {
     inputs.dir new File(preprocessedDir, 'lng')
     outputs.dir processedResDir
     mainClass = 'langs.LangsMain'
-    classpath = files(compileLangTool.destinationDirectory) + configurations.langTool
+    classpath = files(compileLangTool.destinationDirectory)
     args languages, new File(preprocessedDir, 'lng'), processedResDir, preprocessedDir, 'EN'
 }
 

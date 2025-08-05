@@ -78,11 +78,9 @@ PACKAGE CONTENTS
   |- src
   |   '- [Source tree]
   '- util
-      |- build-nightly.xml (Apache Ant nightly buildfile)
-      |- build-release.xml (Apache Ant release buildfile)
-      |- jarsizetask (JarSizeTask)   
+      |- jarsizetask (JarSizeTask)
       |- jlft (Jimm Lang File Tool)
-      |- langs (Jimm langauge files processor)   
+      |- langs (Jimm langauge files processor)
       '- sijapp (Simple Java PreProcessor)
 
 
@@ -155,8 +153,7 @@ instructions in the ProGuard manual to install ProGuard. Jimm requires ProGuard
 4.2 or later. To get a reliable version it is suggested to use version 4.2 and
 not the latest available version.
 
-Legacy build.xml and additional Ant scripts are kept in the util directory for
-reference, but Gradle is now the primary build tool.
+Gradle is now the sole build tool for the project.
 
 To clean the build outputs run:
 
