@@ -26,8 +26,6 @@ package langs;
 import java.io.*;
 import java.util.*;
 
-import org.apache.tools.ant.BuildException;
-import org.apache.tools.ant.Task;
 
 class ShortKeyword
 {
@@ -56,7 +54,7 @@ class ShortKeyword
 	}
 }
 
-public class LangsTask extends Task
+public class LangsTask 
 {
 	private String languages, inDir, outDir, srcDir, idealLang;
 	private static Hashtable shortKeys  = new Hashtable();
@@ -185,14 +183,14 @@ public class LangsTask extends Task
 					words = devideToWords(strBuf.toString());
 				} catch (Exception e)
 				{
-					throw new BuildException("Wrong lang line '" + line + "' in file '" + inFile + "'");
+					throw new RuntimeException("Wrong lang line '" + line + "' in file '" + inFile + "'");
 				}
 				data.addElement(words);
 			}
 		}
 		catch (Exception e)
 		{
-			throw new BuildException(e);
+			throw new RuntimeException(e);
 		}
 		return data;
 	}
@@ -207,7 +205,7 @@ public class LangsTask extends Task
 		}
 	}
 	
-	static private void writeLngFile(Vector pairs, String outFile, boolean onelang) throws BuildException
+	static private void writeLngFile(Vector pairs, String outFile, boolean onelang) throws RuntimeException
 	{
 		try
 		{
@@ -227,7 +225,7 @@ public class LangsTask extends Task
 		}
 		catch (Exception e)
 		{
-			throw new BuildException(e);
+			throw new RuntimeException(e);
 		}
 	}
 	
@@ -365,7 +363,7 @@ public class LangsTask extends Task
 		}
 		catch (Exception e)
 		{
-			throw new BuildException(e);
+			throw new RuntimeException(e);
 		}
 	}
 	
@@ -377,7 +375,7 @@ public class LangsTask extends Task
 	private final static int PP_STATE_WAIT_FOR_MLC_END  = 5; // wait for multiline comment end
 	private final static int PP_STATE_STRING            = 6;
 	
-	static String readAndPrepareSrcFile(String fileName) throws BuildException
+	static String readAndPrepareSrcFile(String fileName) throws RuntimeException
 	{
 		StringBuffer buffer = new StringBuffer();
 		int state = PP_STATE_DIRECT_COPY;
@@ -441,7 +439,7 @@ public class LangsTask extends Task
 		}
 		catch (Exception e)
 		{
-			throw new BuildException(e);
+			throw new RuntimeException(e);
 		}
 		return buffer.toString();
 	}
@@ -498,7 +496,7 @@ public class LangsTask extends Task
 	///////////////////////////////////////////////////////////////////////////
 	///////////////////////////////////////////////////////////////////////////
 	
-	public void execute() throws BuildException
+	public void execute() throws RuntimeException
 	{
 		Hashtable idealHashTable = null;
 		
@@ -513,7 +511,7 @@ public class LangsTask extends Task
 		}
 		
 		int size = langs.size();
-		if (size == 0) new BuildException("No language specified");
+		if (size == 0) new RuntimeException("No language specified");
 		
 		System.out.println("Loading lang file[s]... ");
 		Vector pairs, idealPairs = null;
@@ -542,7 +540,7 @@ public class LangsTask extends Task
 		}
 		catch (Exception e)
 		{
-			throw new BuildException(e);
+			throw new RuntimeException(e);
 		}
 		
 		// Show warnings
